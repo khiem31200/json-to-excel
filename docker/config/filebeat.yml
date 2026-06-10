@@ -1,0 +1,53 @@
+# ====== Filebeat Inputs ======
+# Dùng filestream (thế hệ mới) — hỗ trợ tốt hơn log type
+filebeat.inputs:
+  - type: filestream
+    id: json-to-excel-app-logs
+    enabled: true
+    paths:
+      - /var/log/app/*.log
+    # Parse ECS JSON logs (EcsEncoder xuất 1 dòng JSON mỗi event)
+    parsers:
+      - ndjson:
+          target: ""            # Giải nén JSON vào root document
+          add_error_key: true
+          overwrite_keys: true
+
+# ====== Processors ======
+processors:
+  # Thêm data_stream fields vào document
+  # Pipeline "filebeat-to-logs-reroute" sẽ đổi _index sang logs-json_to_excel-default
+  # → khớp logs-*-* template → Kibana APM tìm thấy và correlate với trace
+  - add_fields:
+      target: data_stream
+      fields:
+        type: logs
+        dataset: json_to_excel
+        namespace: default
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+
+# ====== Output: Elasticsearch ======
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  # ★ KEY: Pipeline này dùng "set" processor để đổi _index → logs-json_to_excel-default
+  # Filebeat vẫn dùng "create" action (ILM data stream mode) → data stream hoạt động
+  # ES auto-create logs-json_to_excel-default từ built-in logs-*-* template
+  pipeline: "filebeat-to-logs-reroute"
+  allow_older_versions: true
+
+# Template settings — Filebeat tự tạo filebeat-* data stream
+# QUAN TRỌNG: setup.ilm.enabled đã bị DEPRECATED trong filebeat 8.x.
+# Filebeat 8.x tự động dùng Elasticsearch lifecycle management qua data streams.
+# Không cần khai báo setup.ilm.enabled — chỉ cần template settings dưới đây.
+setup.template.settings:
+  index.number_of_shards: 1
+  index.number_of_replicas: 0
+
+# ====== Kibana ======
+setup.kibana:
+  host: "http://kibana:5601"
+
+# ====== Logging ======
+logging.level: info
+logging.to_files: false

@@ -1,0 +1,26 @@
+apm-server:
+  host: "0.0.0.0:8200"
+
+  # Cho phép anonymous access (không cần secret token cho local dev)
+  auth:
+    anonymous:
+      enabled: true
+      allow_agent: ["*"]
+      allow_service: ["*"]
+
+  # Bật OTLP receiver — cho phép Spring Boot gửi trace qua OTLP gRPC
+  otlp:
+    enabled: true
+    grpc:
+      enabled: true
+      host: "0.0.0.0:8200"
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  indices:
+    - index: "apm-%{[observer.version]}-%{+yyyy.MM.dd}"
+
+# Tắt Kibana monitoring cũ, dùng cách mới
+monitoring:
+  enabled: false
+
