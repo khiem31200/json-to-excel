@@ -28,7 +28,7 @@ services:
       - STORAGE_TIME_MIN=10
       - DEFAULT_EXCEL_SHEET_NAME=Data
       - MAX_ROW_PER_EXCEL_BATCH=2000
-      - MAX_ROW_PER_DATA_BATCH=500
+      - MAX_ROW_PER_DATA_BATCH=600
       - REPOSITORY_MODE=mongo
       - BATCH_MODE=off
     depends_on:
